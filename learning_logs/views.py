@@ -3,8 +3,8 @@ from django.http import HttpResponseRedirect
 # используеться для перенаправления пользователя к странице topics после отправки введенной темы.
 from django.core.urlresolvers import reverse
 # reverse() определяет URL по заданной схеме URL (то есть Django сгенерирует URL при запросе страницы)
-from .models import Topic
-from .forms import TopicForm
+from .models import Topic, Entry
+from .forms import TopicForm, EntryForm
 
 
 def index(request):
@@ -37,3 +37,39 @@ def new_topic(request):
             return HttpResponseRedirect(reverse('learning_logs:topics'))
     context = {'form': form}
     return render(request, 'learning_logs/new_topic.html', context)
+
+
+def new_entry(request, topic_id):
+    """Добавляет новую запись по конкретной теме."""
+    topic = Topic.objects.get(id=topic_id)
+    if request.method != 'POST':
+        # Данные не отправлялись; создается пустая форма.
+        form = EntryForm()
+    else:
+        # Отправлены данные POST; обработать данные.
+        form = EntryForm(data=request.POST)
+        if form.is_valid():
+            new_entry = form.save(commit=False)
+            new_entry.topic = topic
+            new_entry.save()
+            return HttpResponseRedirect(reverse('learning_logs:topic',
+                                                args=[topic_id]))
+    context = {'topic': topic, 'form': form}
+    return render(request, 'learning_logs/new_entry.html', context)
+
+def edit_entry(request, entry_id):
+    """Редактирует существующую запись."""
+    entry = Entry.objects.get(id=entry_id)
+    topic = entry.topic
+    if request.method != 'POST':
+        # Исходный запрос; форма заполняется данными текущей записи.
+        form = EntryForm(instance=entry)
+    else:
+        # Отправка данных POST; обработать данные.
+        form = EntryForm(instance=entry, data=request.POST)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(reverse('learning_logs:topic',
+                                        args=[topic.id]))
+    context = {'entry': entry, 'topic': topic, 'form': form}
+    return render(request, 'learning_logs/edit_entry.html', context)
