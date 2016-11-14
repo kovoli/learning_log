@@ -1,10 +1,12 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class Topic(models.Model):
     """Тема, которую изучает пользователь"""
     text = models.CharField(max_length=200)
     date_added = models.DateTimeField(auto_now_add=True)
+    owner = models.ForeignKey(User)  #  owner, используемое в отношении внешнего ключа с моделью User.
 
     class Meta:
         verbose_name = 'Тема'
